@@ -3,9 +3,11 @@ WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 COPY index.ts ./
-RUN bun build --compile --minify --target=bun index.ts --outfile=bunfi
 
-FROM gcr.io/distroless/static-debian12
-COPY --from=build /app/bunfi /bunfi
+FROM oven/bun:1-alpine
+WORKDIR /app
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./
+COPY --from=build /app/index.ts ./
 ENV BUN_JSC_forceRAMSize=33554432
-ENTRYPOINT ["/bunfi"]
+CMD ["bun", "run", "index.ts"]
