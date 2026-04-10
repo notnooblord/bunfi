@@ -11,6 +11,7 @@ const UNIFI_API_KEY = env("UNIFI_API_KEY");
 const CF_TOKEN = env("CLOUDFLARE_API_TOKEN");
 const DOMAIN = env("DOMAIN");
 const CRON = process.env.CRON || "*/5 * * * *";
+const SUBDOMAIN = process.env.SUBDOMAIN || "";
 let cfZoneId: string;
 
 // --- UniFi API ---
@@ -166,7 +167,8 @@ async function sync() {
       continue;
     }
 
-    const fqdn = `${sanitize(name)}.${DOMAIN}`;
+    const base = SUBDOMAIN ? `${SUBDOMAIN}.${DOMAIN}` : DOMAIN;
+    const fqdn = `${sanitize(name)}.${base}`;
     if (v4) await upsertRecord(dnsRecords, fqdn, "A", v4);
     if (v6 || fallbackV6) await upsertRecord(dnsRecords, fqdn, "AAAA", (v6 || fallbackV6)!);
   }
@@ -182,6 +184,7 @@ function sanitize(name: string): string {
     .replace(/^-|-$/g, "");
 }
 
-console.log(`bunfi: syncing UniFi sites → *.${DOMAIN} on "${CRON}"`);
+const suffix = SUBDOMAIN ? `${SUBDOMAIN}.${DOMAIN}` : DOMAIN;
+console.log(`bunfi: syncing UniFi hosts → *.${suffix} on "${CRON}"`);
 sync().catch(console.error);
 Bun.cron(CRON, () => sync().catch(console.error));
